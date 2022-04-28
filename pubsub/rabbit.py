@@ -4,7 +4,13 @@ import contextvars
 from . import settings
 
 _CONNECTIONS = {}
-_CHANNELS = contextvars.ContextVar('channels', default=None)
+_CHANNELS = contextvars.ContextVar('channels', default={})
+
+
+class NamedBlockingConnection(pika.BlockingConnection):
+    def __init__(self, name, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = name
 
 
 def connect(name):
@@ -14,16 +20,18 @@ def connect(name):
 
     params = pika.URLParameters(settings.RABBITMQ_URL)
     params.heartbeat = 5 * 60
-    conn = pika.BlockingConnection(params)
+    conn = NamedBlockingConnection(name, params)
     _CONNECTIONS[name] = conn
     return conn
 
 
 def channel(connection):
-    chn = _CHANNELS.get()
+    channels = _CHANNELS.get()
+    chn = channels.get(connection.name)
     if chn and chn.is_open:
         return chn
 
     chn = connection.channel()
-    _CHANNELS.set(chn)
+    channels[connection.name] = chn
+    _CHANNELS.set(channels)
     return chn
