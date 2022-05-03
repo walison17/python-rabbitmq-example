@@ -1,38 +1,35 @@
 services:
   producer:
     build: .
-    command: wait-for-it -t 0 localhost:5672 -- python -m pubsub.producer
+    command: wait-for-it -t 0 rabbit:5672 -- python -m pubsub.producer
     depends_on:
       - rabbit
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2F
+      - RABBITMQ_URL=amqp://guest:guest@rabbit:5672/%2F
     volumes:
       - .:/app
-    network_mode: host
 
   consumer1:
     build: .
-    command: wait-for-it -t 0 localhost:5672 -- python -m pubsub.consumer
+    command: wait-for-it -t 0 rabbit:5672 -- python -m pubsub.consumer
     depends_on:
       - rabbit
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2F
+      - RABBITMQ_URL=amqp://guest:guest@rabbit:5672/%2F
       - QUEUE=consumer1.logs
     volumes:
       - .:/app
-    network_mode: host
 
   consumer2:
     build: .
-    command: wait-for-it -t 0 localhost:5672 -- python -m pubsub.consumer
+    command: wait-for-it -t 0 rabbit:5672 -- python -m pubsub.consumer
     depends_on:
       - rabbit
     environment:
-      - RABBITMQ_URL=amqp://guest:guest@localhost:5672/%2F
+      - RABBITMQ_URL=amqp://guest:guest@rabbit:5672/%2F
       - QUEUE=consumer2.logs
     volumes:
       - .:/app
-    network_mode: host
 
   rabbit:
     image: rabbitmq:3.9.10-management
